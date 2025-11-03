@@ -153,18 +153,30 @@ class _AgriChainAppState extends State<AgriChainApp> {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
+        debugPrint('🔄 StreamBuilder rebuild - Connection: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, User: ${snapshot.data?.uid}');
+        
         if (snapshot.connectionState == ConnectionState.waiting) {
+          debugPrint('⏳ Waiting for auth state...');
           return _buildLoadingScreen();
         }
         
         if (snapshot.hasData && snapshot.data != null) {
+          debugPrint('✅ User authenticated: ${snapshot.data!.uid}');
           // User is signed in, load their data and show main screen
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final appState = Provider.of<AppState>(context, listen: false);
-            appState.loadUserData(snapshot.data!.uid);
-          });
+          final appState = Provider.of<AppState>(context, listen: false);
+          
+          // Only load user data if not already loaded for this user
+          if (appState.currentUser?.id != snapshot.data!.uid) {
+            debugPrint('📥 Loading user data for: ${snapshot.data!.uid}');
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              appState.loadUserData(snapshot.data!.uid);
+            });
+          } else {
+            debugPrint('✓ User data already loaded');
+          }
           return const MainScreen();
         } else {
+          debugPrint('🔓 No user authenticated - showing LoginScreen');
           // User is not signed in, show login screen
           return const LoginScreen();
         }

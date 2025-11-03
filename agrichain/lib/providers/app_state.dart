@@ -56,10 +56,8 @@ class AppState extends ChangeNotifier {
   Future<void> initialize() async {
     _setLoading(true);
     try {
-      // Listen to auth state changes
-      _auth.authStateChanges().listen(_onAuthStateChanged);
-      
-      // Mock data initialization removed to avoid permission errors
+      // Removed auth state listener to avoid conflicts with StreamBuilder in main.dart
+      // The main.dart StreamBuilder will handle auth state changes and call loadUserData
       
       // Check if user is already signed in
       _firebaseUser = _auth.currentUser;
@@ -71,18 +69,6 @@ class AppState extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
-  }
-
-  // Auth state change handler
-  Future<void> _onAuthStateChanged(User? user) async {
-    _firebaseUser = user;
-    if (user != null) {
-      await _loadUserData(user.uid);
-    } else {
-      _currentUser = null;
-      _clearData();
-    }
-    notifyListeners();
   }
 
   // Load user data from Firestore
@@ -129,6 +115,8 @@ class AppState extends ChangeNotifier {
           isActive: userData['isActive'] ?? true,
           metadata: Map<String, dynamic>.from(userData['metadata'] ?? {}),
         );
+        debugPrint('👤 Current user set: ${_currentUser?.email}');
+        notifyListeners(); // Notify that user is loaded
         await _loadUserRelatedData();
       } else {
         debugPrint('❌ User data not found after retries for Firebase UID: $firebaseUid');
