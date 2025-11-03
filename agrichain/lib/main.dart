@@ -30,6 +30,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  // Set Firebase Auth persistence for web
+  try {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    debugPrint('✅ Firebase Auth persistence set to LOCAL');
+  } catch (e) {
+    debugPrint('⚠️ Could not set persistence (might not be web platform): $e');
+  }
+  
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

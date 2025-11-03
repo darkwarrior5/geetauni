@@ -94,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (credential.user != null && mounted) {
         debugPrint('✅ Firebase Auth successful: ${credential.user!.uid}');
-        debugPrint('� StreamBuilder will handle navigation and data loading');
+        debugPrint('StreamBuilder will handle navigation and data loading');
         HapticFeedback.lightImpact();
         // Note: Don't manually load user data or navigate here
         // The StreamBuilder in main.dart will detect the auth state change
