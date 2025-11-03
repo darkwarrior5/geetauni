@@ -15,7 +15,6 @@ import '../screens/wallet_connection_screen.dart';
 import '../screens/transaction_history_screen.dart';
 import '../screens/mint_land_nft_screen.dart';
 import '../screens/mint_crop_nft_screen.dart';
-import '../screens/login_screen.dart';
 import '../config/app_config.dart';
 import '../services/profile_service.dart';
 import '../services/wallet_service.dart';
@@ -1301,38 +1300,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () async {
               Navigator.pop(context);
               
-              // Show loading indicator
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-              
               try {
+                debugPrint('🔓 Starting logout process...');
+                
                 // Clear app state first
                 final appState = Provider.of<AppState>(context, listen: false);
                 appState.clearUser();
+                debugPrint('✅ App state cleared');
                 
-                // Sign out from Firebase
+                // Sign out from Firebase - StreamBuilder will handle navigation
                 await FirebaseAuth.instance.signOut();
+                debugPrint('✅ Firebase signout complete');
                 
-                // Close loading dialog
+                // Show success message
                 if (context.mounted) {
-                  Navigator.pop(context);
-                  
-                  // Navigate to login screen and clear navigation stack
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Logged out successfully'),
+                      backgroundColor: AppTheme.primaryGreen,
+                      duration: Duration(seconds: 2),
+                    ),
                   );
                 }
               } catch (e) {
                 debugPrint('❌ Logout error: $e');
                 if (context.mounted) {
-                  Navigator.pop(context); // Close loading dialog
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Logout failed: $e'),
