@@ -88,17 +88,24 @@ class _LoginScreenState extends State<LoginScreen>
     HapticFeedback.lightImpact();
 
     try {
+      debugPrint('🔐 Attempting to sign in user...');
       final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
       if (credential.user != null && mounted) {
+        debugPrint('✅ Firebase Auth successful: ${credential.user!.uid}');
+        debugPrint('📥 Loading user data from Firestore...');
+        
         final appState = Provider.of<AppState>(context, listen: false);
         await appState.loadUserData(credential.user!.uid);
+        
+        debugPrint('✅ Login complete, user data loaded');
         HapticFeedback.lightImpact();
       }
     } on FirebaseAuthException catch (e) {
+      debugPrint('❌ Firebase Auth error: ${e.code} - ${e.message}');
       HapticFeedback.heavyImpact();
       setState(() {
         switch (e.code) {
@@ -114,11 +121,15 @@ class _LoginScreenState extends State<LoginScreen>
           case 'user-disabled':
             _errorMessage = 'This account has been disabled.';
             break;
+          case 'invalid-credential':
+            _errorMessage = 'Invalid email or password.';
+            break;
           default:
-            _errorMessage = 'Login failed. Please try again.';
+            _errorMessage = 'Login failed: ${e.message}';
         }
       });
     } catch (e) {
+      debugPrint('❌ Unexpected error during login: $e');
       HapticFeedback.heavyImpact();
       setState(() {
         _errorMessage = 'An unexpected error occurred. Please try again.';

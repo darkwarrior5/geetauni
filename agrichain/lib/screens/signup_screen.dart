@@ -69,6 +69,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
+      debugPrint('🚀 Starting user registration...');
+      
       // Create Firebase user account
       final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
@@ -76,15 +78,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (userCredential.user != null) {
+        debugPrint('✅ Firebase Auth user created: ${userCredential.user!.uid}');
+        
         // Update Firebase user display name
         await userCredential.user!.updateDisplayName(
           '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
         );
+        debugPrint('✅ Display name updated');
 
         // Create user document in Firestore
         final userData = {
           'id': userCredential.user!.uid,
           'firebaseUid': userCredential.user!.uid,
+          'firstName': _firstNameController.text.trim(),
+          'lastName': _lastNameController.text.trim(),
           'name': '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
           'email': _emailController.text.trim(),
           'phone': _phoneController.text.trim(),
@@ -97,7 +104,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
           'metadata': <String, dynamic>{},
         };
 
-        await DatabaseService().createUser(userData);
+        debugPrint('📝 Creating user document in Firestore...');
+        final created = await DatabaseService().createUser(userData);
+        if (created) {
+          debugPrint('✅ User document created successfully in Firestore');
+        } else {
+          debugPrint('❌ Failed to create user document in Firestore');
+          throw Exception('Failed to create user document');
+        }
 
         // Create KYC data if provided
         if (_aadhaarController.text.isNotEmpty || _panController.text.isNotEmpty) {

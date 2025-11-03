@@ -88,8 +88,24 @@ class AppState extends ChangeNotifier {
   // Load user data from Firestore
   Future<void> _loadUserData(String firebaseUid) async {
     try {
-      final userData = await _databaseService.getUserByFirebaseUid(firebaseUid);
+      debugPrint('🔍 Loading user data for Firebase UID: $firebaseUid');
+      
+      // Retry logic in case of race condition between signup and login
+      Map<String, dynamic>? userData;
+      int retries = 3;
+      
+      while (retries > 0 && userData == null) {
+        userData = await _databaseService.getUserByFirebaseUid(firebaseUid);
+        if (userData == null) {
+          debugPrint('⏳ User data not found, retrying... ($retries attempts left)');
+          await Future.delayed(const Duration(seconds: 1));
+          retries--;
+        }
+      }
+      
       if (userData != null) {
+        debugPrint('✅ User data loaded successfully: ${userData['email']}');
+        final userTypeString = userData['userType'] as String? ?? 'farmer';
         _currentUser = FirestoreUser(
           id: userData['id'] ?? '',
           name: userData['firstName'] != null && userData['lastName'] != null 
@@ -98,7 +114,7 @@ class AppState extends ChangeNotifier {
           email: userData['email'] ?? '',
           phone: userData['phone'],
           userType: UserType.values.firstWhere(
-            (e) => e.name == userData['userType'],
+            (e) => e.name == userTypeString,
             orElse: () => UserType.farmer,
           ),
           location: userData['location'],
@@ -114,8 +130,12 @@ class AppState extends ChangeNotifier {
           metadata: Map<String, dynamic>.from(userData['metadata'] ?? {}),
         );
         await _loadUserRelatedData();
+      } else {
+        debugPrint('❌ User data not found after retries for Firebase UID: $firebaseUid');
+        _setError('User profile not found. Please complete your registration.');
       }
     } catch (e) {
+      debugPrint('❌ Error loading user data: $e');
       _setError('Failed to load user data: $e');
     }
   }
